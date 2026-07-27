@@ -37,7 +37,7 @@ This method returns two effective rate constants. One in the form `rate = keff[H
 # Parameters:
 Each method available has a unique set of input parameters that must be met for the solver to calculate the effective rate constant. Please enter the parameters seperated by commas in the following order for each method.
 - `MESS_HK`: <br> Equilibrium rate constant for dissociation from MESS (keq), <br> Forward reaction rate constant from MESS (k2), <br> Radius of a water micro droplet (m), <br> Accommodation Coefficient, <br> Temperature of reaction (K), <br> Attempt frequency (1/s), <br> Desorption Energy (kJ/mol), <br> Concentration of water dimers (molecules/cm^3)
-- `HK_P`:  <br> Radius of a water micro droplet (m),<br> droplet number density (droplets/m^3), <br> Energy for reaction (kJ/mol),<br> Energy for deesorption (kJ/mol),<br>Temperature of reaction (K), <br> The attempt frequency (1/s), <br>Accommodation Coefficient`
+- `HK_P`:  <br> Radius of a water micro droplet (m),<br> droplet number density (droplets/m^3), <br> Energy for reaction (kJ/mol),<br> Energy for deesorption (kJ/mol),<br>Temperature of reaction (K), <br> The attempt frequency (1/s), <br>Accommodation Coefficient
 - `BEMM`: <br> Pressure of the UF6 gas/vapor (Pa), <br> Temperature of the surface of the water-micro-droplet (K), <br> Temperature of the UF6 vapor/gase (K), <br> Velocity of the UF6 gas molecules (m/s), <br> Radius of the water-microdroplet (m), <br> Droplet number density (droplets/m^3), <br> The probability of reaction before desoprtion
 
 # Example Execution:
