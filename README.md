@@ -36,6 +36,38 @@ This method returns two effective rate constants. One in the form `rate = keff[H
 
 # Parameters:
 Each method available has a unique set of input parameters that must be met for the solver to calculate the effective rate constant. Please enter the parameters seperated by commas in the following order for each method.
-- `MESS_HK`: `Equilibrium rate constant for dissociation from MESS (keq)`, `Forward reaction rate constant from MESS (k2)`, `Radius of a water micro droplet (m)`, `Accommodation Coefficient`, `Temperature of reaction (K)`, `Attempt frequency (1/s)`, `Desorption Energy (kJ/mol)`, `Concentration of water dimers (molecules/cm^3)`
-- `HK_P`: `Radius of a water micro droplet (m)`,`droplet number density (droplets/m^3)`, `Energy for reaction (kJ/mol)`,`Energy for deesorption (kJ/mol)`,`Temperature of reaction (K)`,`The attempt frequency (1/s)`, `Accommodation Coefficient`
-- `BEMM`: `Pressure of the UF6 gas/vapor (Pa)`, `Temperature of the surface of the water-micro-droplet (K)`, `Temperature of the UF6 vapor/gase (K)`, `Velocity of the UF6 gas molecules (m/s)`, `Radius of the water-microdroplet (m)`, `Droplet number density (droplets/m^3)`, `The probability of reaction before desoprtion`
+- `MESS_HK`: <br> Equilibrium rate constant for dissociation from MESS (keq), <br> Forward reaction rate constant from MESS (k2), <br> Radius of a water micro droplet (m), <br> Accommodation Coefficient, <br> Temperature of reaction (K), <br> Attempt frequency (1/s), <br> Desorption Energy (kJ/mol), <br> Concentration of water dimers (molecules/cm^3)
+- `HK_P`:  <br> Radius of a water micro droplet (m),<br> droplet number density (droplets/m^3), <br> Energy for reaction (kJ/mol),<br> Energy for deesorption (kJ/mol),<br>Temperature of reaction (K), <br> The attempt frequency (1/s), <br>Accommodation Coefficient`
+- `BEMM`: <br> Pressure of the UF6 gas/vapor (Pa), <br> Temperature of the surface of the water-micro-droplet (K), <br> Temperature of the UF6 vapor/gase (K), <br> Velocity of the UF6 gas molecules (m/s), <br> Radius of the water-microdroplet (m), <br> Droplet number density (droplets/m^3), <br> The probability of reaction before desoprtion
+
+# Example Execution:
+
+Code: 
+```
+Available methods:
+MESS_HK
+HK_P
+BEMM
+
+What method would you like to use?
+```
+
+User:
+```
+HK_P
+```
+
+Code:
+```
+Please input all the data necessary to compute the effective rate constant. Please enter comma-separated numeric values.
+```
+
+User:
+```
+1e-6, 1e12, 25, 40, 298, 1e13, 0.1
+```
+
+Code:
+```
+The effective rate constant or constants with method HK_P is/are [41.96227663622824] 1/s
+```
