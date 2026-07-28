@@ -236,7 +236,7 @@ def BEMM_keff_from_flux(
             Units: droplets/m^3
 
         reaction_probability:
-            Probability that adsorbed UF6 reacts before desorbing.
+            Probabilty of reaction before desorbing
 
     Returns:
         keff: Effective pressure-decay rate constant.
@@ -278,6 +278,83 @@ def BEMM_keff_from_flux(
 
     return keff
 
+def linearizedBEMM(alpha: float, T_1: float, radius: float, T_inf: float, p_inf: float, p_1: float, nd: float, reaction_probability: float ) -> float:
+    '''
+    This function returns the effective rate constant for the linearized BEMM. This is not as accurate as the normal BEMM and is a approximation that over estimates values. 
+
+    Parameters: 
+        alpha: accomodation coefficeint
+        T_1: Temperature (K) of the water micro droplet surface 
+        radius: Radius of the micro droplet (m)
+        T_inf: Temperature (K) of the UF6 gas/vapor
+        p_inf: Pressure of the Uf6 gas/vapor (Pa)
+        p_1: Effective UF6 partial pressure at the water droplet surface, Pa
+        nd: The droplet number density of the water micro droplet (droplets/m^3)
+        reaction_probability: Probabilty of reaction before desorbing
+
+    Returns:
+        LinearBEMMK: Linearized BEMM effective rate constant 
+    '''
+    logger.debug("Entering linearizedBEMM()")
+    logger.debug(
+    "Inputs: alpha=%s, T_1=%s, radius=%s, T_inf=%s, p_inf=%s, p_1=%s, nd=%s, reaction_probability=%s",
+    alpha, T_1, radius, T_inf, p_inf, p_1, nd, reaction_probability
+    )
+
+    M_UF6 = 0.352  # kg/mol
+    Gas_constant = 8.314462618  # J/(mol K)
+    
+    R = Gas_constant / M_UF6  # J/(kg K)
+    gamma = 1.67
+    evaporation_flux = None
+
+    # Calculating the evaporation flux
+    try:
+        if not 0.0 <= alpha <= 1.0:
+            raise ValueError("alpha must be between 0 and 1.")
+
+        if T_1 <= 0.0:
+            raise ValueError("T_1 must be positive.")
+
+        if T_inf <= 0.0:
+            raise ValueError("T_inf must be positive.")
+
+        if radius <= 0.0:
+            raise ValueError("radius must be positive.")
+
+        if p_inf <= 0.0:
+            raise ValueError("p_inf must be positive.")
+
+        if p_1 < 0.0:
+            raise ValueError("p_1 must be nonnegative.")
+
+        if nd < 0.0:
+            raise ValueError("nd must be nonnegative.")
+
+        if not 0.0 <= reaction_probability <= 1.0:
+            raise ValueError("reaction_probability must be between 0 and 1.")
+
+        # reverse the pressure as adsorption not evaporation
+        delta_p = p_inf - p_1
+        gamma_ratio = (gamma - 1) / gamma 
+        term1 = alpha / (1 - (gamma_ratio * alpha))
+
+        evaporation_flux = term1 * (delta_p / math.sqrt(2 * math.pi * R * T_1))
+    except Exception as e:
+        logger.exception("Failed inside linearizedBEMM().")
+        raise ValueError(f"{e}") from e
+
+    # Convert the flux to a first order rate constant 
+    try:
+        area_per_volume = 4.0 * math.pi * radius**2 * nd
+    
+        LinearBEMMK = evaporation_flux * area_per_volume* R* T_inf / p_inf* reaction_probability
+                        
+    except Exception as e: 
+        raise ValueError(f"{e}") from e
+
+    return LinearBEMMK
+
 def solve(method: str, data: list) -> list:
     """
     This function takes user inputs and returns the requested effective
@@ -289,6 +366,7 @@ def solve(method: str, data: list) -> list:
             - 'MESS_HK'
             - 'HK_P'
             - 'BEMM'
+            - 'LinearBEMM'
 
         data: list
             Input parameters corresponding to the selected method.
@@ -458,9 +536,135 @@ def solve(method: str, data: list) -> list:
 
         return [result]
 
+    
+    elif method == 'LinearBEMM':
+        logger.info("Solving using Linear BEMM method.")
+        
+        try:
+            alpha, T_1, radius, T_inf, p_inf, p_1, nd, reaction_probability = data
+        
+        except (ValueError, TypeError) as e:
+            logger.exception("Invalid data length for Linear BEMM.")
+            raise ValueError(
+                    "Linear BEMM requires data = "
+                "[alpha, T_1, radius, T_inf, p_inf, p_1, nd, reaction_probability]"
+            ) from e
+        
+        logger.debug(
+            "Unpacked Linear BEMM data: alpha=%s, T_1=%s, radius=%s, T_inf=%s, p_inf=%s, p_1=%s, "
+            "nd=%s, reaction_probability=%s",
+            alpha, T_1, radius, T_inf, p_inf, p_1, nd, reaction_probability
+        )
+
+        result = linearizedBEMM(alpha, T_1, radius, T_inf, p_inf, p_1, nd, reaction_probability)
+
+        return [result]
     else:
         logger.error("Unknown method provided: %s", method)
         raise ValueError(f"Unknown method provided: {method}")
+
+def auto_check(rel_tol: float = 5e-3) -> bool:
+    """
+    Automatically checks all calculation methods against known test cases.
+
+    Parameters:
+        rel_tol:
+            Relative tolerance for comparing floating-point results.
+
+    Returns:
+        True if all checks pass.
+
+    Raises:
+        AssertionError if any check fails.
+    """
+
+    logger.info("Starting automatic self-check.")
+
+    test_cases = [
+        {
+            "method": "HK_P",
+            "data": [1.0e-6, 1.0e12, 0.0, 0.0, 300.0, 1.0e12, 0.5],
+            "expected": [105.5],
+            "description": "Hertz-Knudsen pressure decay model",
+        },
+        {
+            "method": "MESS_HK",
+            "data": [1.0, 1.0, 1.0e-6, 0.5, 300.0, 1.0e12, 0.0, 2.0],
+            "expected": [5.04e-5, 1.01e-4],
+            "description": "MESS preliminary HK model",
+        },
+        {
+            "method": "BEMM",
+            "data": [100.0, 300.0, 300.0, 1.0, 1.0e-6, 1.0e12, 0.5],
+            "expected": [6.28],
+            "description": "BEMM flux-to-keff model",
+        },
+        {
+            "method": "LinearBEMM",
+            "data": [0.5, 300.0, 1.0e-6, 300.0, 100.0, 90.0, 1.0e12, 0.5],
+            "expected": [13.2],
+            "description": "Linearized BEMM adsorption model",
+        },
+    ]
+
+    all_passed = True
+
+    print("\nRunning automatic self-check...")
+    print("-" * 72)
+
+    for case in test_cases:
+        method = case["method"]
+        data = case["data"]
+        expected_values = case["expected"]
+        description = case["description"]
+
+        try:
+            result_values = solve(method, data)
+
+            if len(result_values) != len(expected_values):
+                raise AssertionError(
+                    f"{method}: Expected {len(expected_values)} result values, "
+                    f"but got {len(result_values)}."
+                )
+
+            case_passed = True
+
+            for i, (result, expected) in enumerate(zip(result_values, expected_values)):
+                if not math.isclose(result, expected, rel_tol=rel_tol):
+                    case_passed = False
+                    all_passed = False
+
+                    print(f"FAIL: {method} result[{i}]")
+                    print(f"      Description: {description}")
+                    print(f"      Got:      {result}")
+                    print(f"      Expected: {expected}")
+                    print(f"      Relative tolerance: {rel_tol}")
+                    logger.error(
+                        "Auto-check failed for method=%s result[%s]. Got=%s, expected=%s",
+                        method, i, result, expected
+                    )
+
+            if case_passed:
+                print(f"PASS: {method:<12} {description}")
+                print(f"      Result:   {result_values}")
+                print(f"      Expected: {expected_values}")
+
+        except Exception as e:
+            all_passed = False
+            print(f"ERROR: {method} failed during self-check.")
+            print(f"       Description: {description}")
+            print(f"       Error: {e}")
+            logger.exception("Auto-check error for method=%s", method)
+
+        print("-" * 72)
+
+    if not all_passed:
+        raise AssertionError("One or more automatic self-checks failed.")
+
+    print("All automatic self-checks passed.\n")
+    logger.info("Automatic self-check passed.")
+
+    return True
 
 
 def main():
@@ -469,6 +673,7 @@ def main():
     print("MESS_HK")
     print("HK_P")
     print("BEMM")
+    print("LinearBEMM")
 
     method = input("What method would you like to use?\n").strip()
 
@@ -491,5 +696,7 @@ def main():
     logger.info("Finished.")
 
 
+
 if __name__ == "__main__":
+
     main()
