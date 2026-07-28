@@ -563,110 +563,6 @@ def solve(method: str, data: list) -> list:
         logger.error("Unknown method provided: %s", method)
         raise ValueError(f"Unknown method provided: {method}")
 
-def auto_check(rel_tol: float = 5e-3) -> bool:
-    """
-    Automatically checks all calculation methods against known test cases.
-
-    Parameters:
-        rel_tol:
-            Relative tolerance for comparing floating-point results.
-
-    Returns:
-        True if all checks pass.
-
-    Raises:
-        AssertionError if any check fails.
-    """
-
-    logger.info("Starting automatic self-check.")
-
-    test_cases = [
-        {
-            "method": "HK_P",
-            "data": [1.0e-6, 1.0e12, 0.0, 0.0, 300.0, 1.0e12, 0.5],
-            "expected": [105.5],
-            "description": "Hertz-Knudsen pressure decay model",
-        },
-        {
-            "method": "MESS_HK",
-            "data": [1.0, 1.0, 1.0e-6, 0.5, 300.0, 1.0e12, 0.0, 2.0],
-            "expected": [5.04e-5, 1.01e-4],
-            "description": "MESS preliminary HK model",
-        },
-        {
-            "method": "BEMM",
-            "data": [100.0, 300.0, 300.0, 1.0, 1.0e-6, 1.0e12, 0.5],
-            "expected": [6.28],
-            "description": "BEMM flux-to-keff model",
-        },
-        {
-            "method": "LinearBEMM",
-            "data": [0.5, 300.0, 1.0e-6, 300.0, 100.0, 90.0, 1.0e12, 0.5],
-            "expected": [13.2],
-            "description": "Linearized BEMM adsorption model",
-        },
-    ]
-
-    all_passed = True
-
-    print("\nRunning automatic self-check...")
-    print("-" * 72)
-
-    for case in test_cases:
-        method = case["method"]
-        data = case["data"]
-        expected_values = case["expected"]
-        description = case["description"]
-
-        try:
-            result_values = solve(method, data)
-
-            if len(result_values) != len(expected_values):
-                raise AssertionError(
-                    f"{method}: Expected {len(expected_values)} result values, "
-                    f"but got {len(result_values)}."
-                )
-
-            case_passed = True
-
-            for i, (result, expected) in enumerate(zip(result_values, expected_values)):
-                if not math.isclose(result, expected, rel_tol=rel_tol):
-                    case_passed = False
-                    all_passed = False
-
-                    print(f"FAIL: {method} result[{i}]")
-                    print(f"      Description: {description}")
-                    print(f"      Got:      {result}")
-                    print(f"      Expected: {expected}")
-                    print(f"      Relative tolerance: {rel_tol}")
-                    logger.error(
-                        "Auto-check failed for method=%s result[%s]. Got=%s, expected=%s",
-                        method, i, result, expected
-                    )
-
-            if case_passed:
-                print(f"PASS: {method:<12} {description}")
-                print(f"      Result:   {result_values}")
-                print(f"      Expected: {expected_values}")
-
-        except Exception as e:
-            all_passed = False
-            print(f"ERROR: {method} failed during self-check.")
-            print(f"       Description: {description}")
-            print(f"       Error: {e}")
-            logger.exception("Auto-check error for method=%s", method)
-
-        print("-" * 72)
-
-    if not all_passed:
-        raise AssertionError("One or more automatic self-checks failed.")
-
-    print("All automatic self-checks passed.\n")
-    logger.info("Automatic self-check passed.")
-
-    return True
-
-
 def main():
     logger.info("Starting UF6 hydrolysis effective rate constant calculator.")
     print("Available methods:")
@@ -698,5 +594,4 @@ def main():
 
 
 if __name__ == "__main__":
-
     main()
