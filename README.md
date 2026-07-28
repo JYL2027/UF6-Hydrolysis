@@ -54,7 +54,7 @@ Available methods:
 MESS_HK
 HK_P
 BEMM
-
+LinearBEMM
 What method would you like to use?
 ```
 
